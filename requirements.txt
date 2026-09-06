@@ -1,0 +1,10 @@
+sounddevice
+numpy
+PyQt6
+PyQt6-WebEngine
+google-genai
+google-generativeai
+requests
+duckduckgo-search
+psutil
+Pillow
