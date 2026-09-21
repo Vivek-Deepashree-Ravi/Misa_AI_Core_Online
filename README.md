@@ -1,425 +1,327 @@
-# Misa AI Core
+# Misa AI Core Online
 
-Misa AI Core is a Dockerized, real-time voice assistant...
+**A personal voice assistant for Ubuntu/Linux, built with Python, Gemini Live and Docker.**
 
-Preview the rendered Markdown in VS Code:
+Misa combines spoken conversation, a full-screen desktop interface, local memory and optional tools for social analytics, device controls and Home Assistant. It is designed to run on a Linux laptop or touchscreen appliance with a microphone and speakers.
 
-cd ~/Misa_AI_Core
-code README.md
+This is the **online edition**: Gemini handles voice conversation, while OpenRouter supports helper calls. Running the application in Docker does not make inference offline. Audio and relevant request context are sent to the configured providers.
 
-Then press:
+[Repository](https://github.com/Vivek-Deepashree-Ravi/Misa_AI_Core_Online) · [Setup](#quick-start) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting) · [Known limitations](#known-limitations)
 
-Ctrl+Shift+V
+## Features
 
-Before committing:
+- Real-time voice conversation through Gemini Live.
+- Full-screen PyQt6 WebEngine interface with an HTML/CSS front end.
+- Text input, conversation display and microphone-mode controls.
+- Local JSON memory for personal facts, preferences and projects.
+- OpenRouter helper client with an ordered fallback model pool.
+- Optional Instagram/TikTok analytics through Zernio.
+- Optional Home Assistant controls for lights and switches.
+- Appliance controls for speaker volume, with additional device-specific helpers.
+- Docker configuration for Linux display/audio access and persistent data.
 
-git diff --check README.md
-git status --short
+> **Development status:** This is a working development project, not a finished autonomous agent platform. Read the limitations below, particularly the behavior of mute mode and public-information lookup.
 
-Commit it:
+## Architecture
 
-git add README.md
-git commit -m "docs: add Misa AI Core setup and debugging guide"
+```mermaid
+flowchart TD
+    UI["Desktop UI and text input"] --> Runtime["Python runtime"]
+    Mic["Microphone"] --> Runtime
+    Runtime <--> Gemini["Gemini Live"]
+    Runtime --> Speaker["Speaker output"]
+    Runtime <--> Memory["Local JSON memory"]
+    Runtime --> Tools["Tool handlers"]
+    Tools --> Lookup["Public lookup helper"]
+    Lookup --> Router["OpenRouter"]
+    Lookup --> DDG["DuckDuckGo fallback"]
+    Tools --> Services["Zernio and Home Assistant"]
+    Tools --> Device["Device controls"]
+```
 
+The desktop interface is loaded locally by Qt WebEngine; Misa does not expose a browser chat server or a web port in this repository.
 
-README.md
-Misa AI Core
+| Layer | Implementation |
+| --- | --- |
+| Runtime | Python 3.11, asyncio, Google Gen AI SDK |
+| Voice | Gemini Live; `sounddevice`/PortAudio; PCM resampling |
+| Interface | PyQt6, Qt WebEngine, Qt WebChannel, HTML/CSS |
+| Helper model calls | OpenRouter chat-completions API |
+| Memory | Local JSON files |
+| Packaging | Docker and Docker Compose |
 
-Misa AI Core is a Dockerized, real-time voice assistant for Ubuntu/Linux. It uses Gemini Live for speech-to-speech conversation, PyQt6 WebEngine for the full-screen interface, PulseAudio/PipeWire for host audio, and optional tools for web lookup, social analytics, Raspberry Pi controls, and Home Assistant.
+## Requirements
 
-The interface follows this path:
+- Ubuntu/Linux desktop with X11 or a working XWayland display.
+- Docker Engine and the Docker Compose plugin.
+- Git and a terminal opened in the desktop session.
+- PulseAudio, or PipeWire with PulseAudio compatibility.
+- Working microphone and speakers.
+- Internet access and a Gemini API key with access to the configured Live model.
+- An OpenRouter API key for OpenRouter-backed helpers.
+- Host `xhost` utility for the provided display-access launcher.
 
-runtime.py -> hud.py -> Qt WebEngine -> web/index.html -> web/style.css
+Zernio and Home Assistant credentials are optional. No local model download or dedicated inference GPU is configured by this project. Provider availability, usage limits and charges depend on your account and selected models.
 
-Features
+## Quick start
 
-    Real-time microphone input and spoken responses through Gemini Live
+### 1. Clone the repository
 
-    Female Gemini voice configurable through .env
+```bash
+git clone https://github.com/Vivek-Deepashree-Ravi/Misa_AI_Core_Online.git
+cd Misa_AI_Core_Online
+```
 
-    Full-screen HTML/CSS interface inside PyQt6 WebEngine
+### 2. Configure credentials
 
-    Text chat and microphone mute/unmute controls
+For a fresh checkout:
 
-    Persistent local memory and runtime state
-
-    Optional OpenRouter helper calls
-
-    Optional Zernio Instagram/TikTok analytics
-
-    Optional Home Assistant smart-home controls
-
-    Docker access to the host X11 display, microphone, and speakers
-
-Requirements
-
-    Ubuntu or another Linux desktop distribution
-
-    Docker Engine
-
-    Docker Compose plugin
-
-    X11 or XWayland desktop session
-
-    PulseAudio or PipeWire with PulseAudio compatibility
-
-    Working microphone and speaker
-
-    Gemini API key
-
-    OpenRouter API key for OpenRouter-backed tools
-
-Confirm Docker is available:
-
-docker --version
-docker compose version
-
-Project Structure
-
-Misa_AI_Core/
-├── .env.example                 Example environment configuration
-├── .gitignore                   Excludes secrets, memory and runtime files
-├── Dockerfile                   Misa container image definition
-├── compose.yaml                 Display, audio, device and volume configuration
-├── requirements.txt             Python dependencies
-├── run-docker.sh                Recommended Docker launcher
-├── assistantctl                 Command-line mute/unmute utility
-├── launch_assistant.sh          Optional non-Docker launcher
-├── setup.py                     Optional local dependency installer
-├── start_assistant.py           Optional Python entry point
-├── config/                      Persistent local configuration
-├── memory/                      Persistent Misa memory
-├── runtime/                     PID and listening-state files
-└── misa_ai_core/
-    ├── __main__.py              Runs runtime.main()
-    ├── runtime.py               Gemini Live, audio and tool orchestration
-    ├── settings.py              Secrets and environment configuration
-    ├── ai/
-    │   └── openrouter_gateway.py
-    ├── display/
-    │   ├── hud.py               Qt WebEngine window and Python/JavaScript bridge
-    │   └── web/
-    │       ├── index.html       Orb, chat and UI behavior
-    │       └── style.css        Interface design and responsive layout
-    ├── memory/
-    │   ├── credentials.py
-    │   └── store.py
-    ├── persona/
-    │   └── system_prompt.txt    Misa's personality and behavior
-    ├── state/
-    │   └── listening.py         Persistent microphone listening state
-    └── tools/
-        ├── home_control.py      Home Assistant integration
-        ├── pi_device.py         Device, volume and brightness controls
-        ├── social_metrics.py    Zernio integration
-        └── web_lookup.py        Public information lookup
-
-Configure Misa
-
-From the project directory:
-
-cd ~/Misa_AI_Core
+```bash
 cp .env.example .env
+chmod 600 .env
 nano .env
+```
 
-Required values:
+If `.env` already exists, edit it rather than copying over it. Replace the credential placeholders locally. Leave unused optional credentials empty or remove their lines.
 
+```dotenv
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_LIVE_MODEL=gemini-3.1-flash-live-preview
-MISA_VOICE=Leda
 OPENROUTER_API_KEY=your-openrouter-api-key
 
-Default audio configuration:
-
 MISA_INPUT_DEVICE=pulse
 MISA_OUTPUT_DEVICE=pulse
 MISA_INPUT_DEVICE_RATE=48000
 MISA_OUTPUT_DEVICE_RATE=48000
+```
 
-Optional integrations:
+The Live model ID above is the repository's configured default, not a guarantee of current availability. If the provider rejects it, select a Live-compatible model available to your account.
 
-ZERNIO_API_KEY=your-zernio-api-key
-HOME_ASSISTANT_URL=http://homeassistant.local:8123
-HOME_ASSISTANT_TOKEN=your-home-assistant-long-lived-access-token
+### 3. Start Misa
 
-Never commit .env. If an API key is exposed in terminal output, screenshots, chat, or Git history, revoke it and create a new key.
-Run With Docker
+Run from the project root in your Linux desktop session:
 
-The recommended launcher validates .env, the desktop display, and the PulseAudio socket before starting Compose.
+```bash
+bash run-docker.sh
+```
 
-cd ~/Misa_AI_Core
-chmod +x run-docker.sh
-./run-docker.sh
+The launcher checks `.env`, the display and the PulseAudio socket; sets host user/group IDs; creates persistent directories; grants the local user X11 access; and starts Compose with a build.
 
-The first launch builds misa-ai-core:latest and creates the misa-ai container.
+Misa should open as a full-screen desktop window. Press **F11** to toggle full-screen mode. Successful voice startup logs include `Connected`, `Mic stream open`, `Recv started` and `Play started`.
 
-Run in the background instead:
+The Compose service is named `misa`; the container is named `misa-ai`. Its restart policy is `"no"`, so it will not automatically restart after the container exits.
 
-cd ~/Misa_AI_Core
-xhost +SI:localuser:"$(id -un)"
-docker compose up -d --build
+## Configuration
 
-Follow logs:
+| Variable | Purpose | Default / requirement |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Gemini Live authentication | Required for voice runtime |
+| `GEMINI_LIVE_MODEL` | Live conversation model | `gemini-3.1-flash-live-preview` |
+| `OPENROUTER_API_KEY` | Helper-model authentication | Required for OpenRouter helpers |
+| `MISA_INPUT_DEVICE` | PortAudio input-device name or numeric index | `pulse` |
+| `MISA_OUTPUT_DEVICE` | PortAudio output-device name or numeric index | `pulse` |
+| `MISA_INPUT_DEVICE_RATE` | Input device sample rate | `48000` |
+| `MISA_OUTPUT_DEVICE_RATE` | Output device sample rate | `48000` |
+| `ZERNIO_API_KEY` | Connected social-account analytics | Optional |
+| `HOME_ASSISTANT_URL` | Home Assistant server URL | Optional |
+| `HOME_ASSISTANT_TOKEN` | Home Assistant authentication | Optional |
 
+Audio is resampled from the input device rate to 16 kHz for sending, and from 24 kHz to the output device rate for playback.
+
+The current voice is hardcoded to **Leda** in `misa_ai_core/runtime.py`. A `MISA_VOICE` environment variable is not implemented.
+
+The OpenRouter text/vision pools are defined in `misa_ai_core/ai/openrouter_gateway.py`. There is no `OPENROUTER_MODELS` environment setting in this repository. The shipped IDs use `:free`, but availability and account limits still apply, and they do not make Gemini voice usage free. Optional model arguments in the client are not restricted to free models.
+
+For credentials, `settings.py` reads legacy `config/api_keys.json`, then `.env`, then supported process-environment overrides. Docker Compose loads `.env` into the container environment; changing the host file requires recreating the container.
+
+## Everyday commands
+
+Run these from the project root:
+
+```bash
+# Container status
+docker compose ps -a
+
+# Recent logs
+docker compose logs --tail=100 misa
+
+# Follow logs
 docker compose logs -f misa
 
-Stop Misa:
-
-docker compose down
-
-Restart without rebuilding:
-
+# Restart with the current container configuration
 docker compose restart misa
 
-Recreate the container after changing .env or compose.yaml:
-
+# Apply changes to .env or Compose configuration
 docker compose up -d --force-recreate misa
 
-Rebuild after changing Python files, HTML, CSS, requirements.txt, or the Dockerfile:
+# Rebuild after changing application code or dependencies
+docker compose up -d --build misa
 
+# Stop and remove the container; host data folders remain
 docker compose down
-docker compose build --no-cache misa
-docker compose up -d --force-recreate misa
+```
 
-Expected Startup Logs
+Use the launcher for initial setup, especially when your user/audio group IDs differ from the Compose defaults. Direct Compose commands do not repeat the launcher's desktop checks.
 
-A successful startup includes:
+### Listening controls
 
-[MISA] Connecting...
-[MISA] Connected.
-[MISA] Mic started
-[MISA] Mic stream open
-[MISA] Recv started
-[MISA] Play started
+```bash
+python3 assistantctl status
+python3 assistantctl mute
+python3 assistantctl unmute
+```
 
-MESA, Vulkan, GPU, or D-Bus warnings from Qt WebEngine can be harmless when the interface opens and the successful messages above appear. The container uses software rendering when direct GPU access is unavailable.
-Microphone Controls
+These commands update the listening-state file shared with the container. The UI also has a mute toggle, but that toggle does not persist its state through the same file; CLI status may therefore differ from the UI. Startup resets listening to unmuted.
 
-Use the microphone button in the interface, or control listening from the host:
+**Mute is currently a response-suppression mode, not a microphone privacy switch.** Audio continues to be sent to Gemini for wake-phrase recognition. Muted mode suppresses replies and tool execution. For a microphone privacy stop, stop Misa or disable microphone capture at the operating-system/hardware level.
 
-./assistantctl status
-./assistantctl mute
-./assistantctl unmute
+## Project layout
 
-If the configured runtime always resets to unmuted at startup, muting remains active only for the current process.
+| Path | Responsibility |
+| --- | --- |
+| `compose.yaml`, `Dockerfile` | Container, dependencies, audio/display access and mounts |
+| `run-docker.sh` | Recommended Linux Docker launcher |
+| `assistantctl` | Listening-state CLI |
+| `misa_ai_core/runtime.py` | Gemini session, audio queues, tool declarations and dispatch |
+| `misa_ai_core/settings.py` | Configuration and credential loading |
+| `misa_ai_core/ai/openrouter_gateway.py` | OpenRouter requests and model fallback |
+| `misa_ai_core/display/hud.py` | Qt window and Python/JavaScript bridge |
+| `misa_ai_core/display/web/` | Interface HTML and CSS |
+| `misa_ai_core/persona/system_prompt.txt` | Misa's personality and tool-use instructions |
+| `misa_ai_core/memory/store.py` | Local memory storage and prompt formatting |
+| `misa_ai_core/state/listening.py` | Listening-state persistence |
+| `misa_ai_core/tools/` | Public lookup, social analytics, home and device controls |
+| `memory/`, `config/`, `runtime/` | Persistent local data |
 
-Inspect the saved state:
+## Tools and memory
 
-cat runtime/listening_state.json
+Gemini can request the following functions through the runtime:
 
-Debugging
-Container status and exit reason
+| Tool | Purpose |
+| --- | --- |
+| `web_search` | Public-information helper; see the search limitation below |
+| `social_insights` | Read connected Instagram/TikTok analytics through Zernio |
+| `pi_controls` | Listening mode, speaker volume and appliance-specific controls |
+| `home_control` | Home Assistant light/switch status and actions |
+| `save_memory` | Save durable personal facts and preferences |
+| `shutdown_misa` | Close the assistant |
 
-docker compose ps -a
-docker inspect misa-ai \
-  --format 'Status={{.State.Status}} ExitCode={{.State.ExitCode}} Error={{.State.Error}} OOM={{.State.OOMKilled}}'
+There is no general desktop automation or arbitrary shell-execution tool exposed to the model. Device helpers internally run predefined commands.
 
-Interpretation:
+Memory is stored in `memory/long_term.json`. The store limits individual values and trims older entries when its serialized content exceeds approximately 2,200 characters. It is a small personal-memory store, not a document RAG database. Memory enters the Gemini system prompt when a session connects; newly saved facts are not automatically injected into an already-open session. Automatic post-conversation OpenRouter memory extraction is disabled in the runtime; explicit `save_memory` calls remain available.
 
-    ExitCode=0: Misa or its window closed normally.
+## Data and privacy
 
-    ExitCode=137 and OOM=true: the container ran out of memory.
+| Host directory | Container location | Contents |
+| --- | --- | --- |
+| `memory/` | `/app/memory` | Personal memory |
+| `config/` | `/app/config` | Local integration configuration |
+| `runtime/` | `/app/runtime` | PID and listening-state files |
 
-    ExitCode=139: a native library or GUI component crashed.
+These are bind mounts and survive container rebuilds. Stop Misa before copying them for a consistent backup. Do not commit credentials, personal memories or runtime logs.
 
-    A Python traceback in logs identifies an application exception.
+The container uses host networking and access to X11, the audio socket and `/dev/snd`. It runs as the configured host UID/GID. Treat the checkout and its dependencies as trusted application code with desktop access, not as an isolated sandbox.
 
-Read recent logs
+Keep `.env` private. Revoke exposed keys before replacing them. Logs can contain spoken text, tool arguments and saved facts; redact these before sharing logs publicly. Local memory storage does not prevent relevant memory from being sent to Gemini as context.
 
-docker compose logs --tail=200 misa
+## Troubleshooting
 
-Open a shell inside a running container
+### The window does not open
 
-docker exec -it misa-ai bash
+Run the launcher from the desktop session, not a headless SSH session. Check:
 
-If the container is stopped, create a temporary diagnostic container:
-
-docker compose run --rm --no-deps misa bash
-
-Confirm the WebEngine UI is installed
-
-docker compose run --rm --no-deps misa python -c \
-  'from PyQt6.QtWebEngineWidgets import QWebEngineView; print("WebEngine OK")'
-
-Confirm the image contains the WebEngine HUD:
-
-docker compose run --rm --no-deps misa \
-  grep -n "QWebEngineView" /app/misa_ai_core/display/hud.py
-
-Confirm the HTML uses Qt WebChannel:
-
-docker compose run --rm --no-deps misa \
-  grep -n "qtwebchannel" /app/misa_ai_core/display/web/index.html
-
-If libnspr4.so, libxkbfile.so.1, or another native library is missing, add the corresponding Debian package to the Dockerfile and rebuild. Common WebEngine packages include:
-
-libnspr4
-libnss3
-libxkbfile1
-libgbm1
-libxcomposite1
-libxdamage1
-libxrandr2
-libxtst6
-
-Confirm display access
-
-On the host:
-
+```bash
 echo "$DISPLAY"
-xhost +SI:localuser:"$(id -un)"
 ls -l /tmp/.X11-unix
+docker compose logs --tail=100 misa
+```
 
-The Compose service must mount /tmp/.X11-unix and pass DISPLAY into the container.
-Confirm microphone and speaker devices
+Confirm that WebEngine imports inside the image:
 
-On the host:
+```bash
+docker compose run --rm --no-deps misa python -c \
+  'from PyQt6.QtWebEngineWidgets import QWebEngineView; print("WebEngine import OK")'
+```
 
-arecord -l
-aplay -l
+### No microphone audio or invalid sample rate
+
+Check host audio devices and the container's PortAudio devices:
+
+```bash
 pactl list short sources
 pactl list short sinks
+docker compose exec misa python -m sounddevice
+```
 
-Inside the running container:
+Start with the supplied `pulse` device names and 48 kHz device rates. Ensure the PulseAudio-compatible socket exists and is mounted. After editing `.env`, recreate the container.
 
-docker exec misa-ai python -m sounddevice
-docker exec misa-ai arecord -l
+### OpenRouter returns HTTP 401
 
-Test microphone capture through PulseAudio:
+The key was not accepted. Changing models will not repair authentication. Verify the OpenRouter key locally, replace it if needed, and recreate the container:
 
-docker exec -it misa-ai bash
-timeout 8 arecord -D pulse -t raw -f S16_LE -r 48000 -c 1 -vv /dev/null
-
-Test speaker output:
-
-docker exec -it misa-ai \
-  speaker-test -D pulse -t sine -f 440 -c 2 -l 1
-
-Test the Gemini text API
-
-This checks the API key independently of Gemini Live. Use a currently available text model:
-
-docker exec misa-ai python -c \
-'import os; from google import genai; c=genai.Client(api_key=os.environ["GEMINI_API_KEY"]); r=c.models.generate_content(model="gemini-3.6-flash", contents="Reply exactly: Misa API test successful."); print(r.text)'
-
-Expected:
-
-Misa API test successful.
-
-Verify environment variables without exposing secrets
-
-Do not print API-key values. Check only whether they exist:
-
-docker exec misa-ai python -c \
-'import os; print("Gemini:", bool(os.getenv("GEMINI_API_KEY"))); print("OpenRouter:", bool(os.getenv("OPENROUTER_API_KEY"))); print("Live model:", os.getenv("GEMINI_LIVE_MODEL")); print("Voice:", os.getenv("MISA_VOICE"))'
-
-Inspect container mounts
-
-docker inspect misa-ai \
-  --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}'
-
-The expected persistent mounts are:
-
-./memory  -> /app/memory
-./config  -> /app/config
-./runtime -> /app/runtime
-
-Python syntax check
-
-docker compose run --rm --no-deps misa python -m compileall -q /app/misa_ai_core
-
-HTML/CSS changes are not appearing
-
-Confirm the host files first:
-
-grep -n "QWebEngineView" misa_ai_core/display/hud.py
-grep -n "qtwebchannel" misa_ai_core/display/web/index.html
-ls -l misa_ai_core/display/web/style.css
-
-Then rebuild without cache:
-
-docker compose down
-docker compose build --no-cache misa
+```bash
 docker compose up -d --force-recreate misa
+```
 
-If the interface remains old, compare the host and container files:
+Check credential presence without printing values:
 
-sha256sum misa_ai_core/display/hud.py
-docker compose run --rm --no-deps misa sha256sum /app/misa_ai_core/display/hud.py
+```bash
+docker compose exec misa python -c \
+  'from misa_ai_core.settings import get_secret; print("Gemini configured:", bool(get_secret("GEMINI_API_KEY"))); print("OpenRouter configured:", bool(get_secret("OPENROUTER_API_KEY")))'
+```
 
-The hashes should match.
-Common Errors
-Missing .env
+Presence does not prove validity. The current gateway retries authentication failures across its model pool, so an invalid key can cause a long delay before the final error.
 
-cp .env.example .env
-nano .env
+### The UI opens but voice never connects
 
-ModuleNotFoundError: No module named 'numpy'
+Inspect logs for the actual Gemini error. Check the key, model access and network connectivity. The UI's bridge status alone does not establish a working Gemini connection. Audio-device failures can also trigger the runtime's reconnect loop.
 
-Ensure numpy is present in requirements.txt, then rebuild.
-ImportError: libglib-2.0.so.0
+### Source changes do not appear
 
-Ensure the Dockerfile installs libglib2.0-0, then rebuild.
-ImportError: libxkbfile.so.1
+The source is copied into the image, not bind-mounted. Rebuild:
 
-Add libxkbfile1 to the Dockerfile package list, then rebuild.
-Invalid sample rate [PaErrorCode -9997]
+```bash
+docker compose up -d --build misa
+```
 
-Use PulseAudio at the host device rate:
+### Syntax check
 
-MISA_INPUT_DEVICE=pulse
-MISA_OUTPUT_DEVICE=pulse
-MISA_INPUT_DEVICE_RATE=48000
-MISA_OUTPUT_DEVICE_RATE=48000
+```bash
+docker compose run --rm --no-deps misa \
+  python -m compileall -q /app/misa_ai_core
+```
 
-muted: ignored tool
+This checks Python syntax only; it does not validate model access, audio hardware, tool behavior or missing names inside unexecuted functions.
 
-Unmute through the interface or run:
+## Known limitations
 
-./assistantctl unmute
+The following describe the inspected code, not completed fixes:
 
-Search answers are outdated
+- **Public lookup:** `web_search()` first asks an OpenRouter model without retrieving web evidence. DuckDuckGo is used only after that call fails. Do not treat a successful response as verified live research. The comparison helper is not wired into this path, and the duplicate exception handler does not catch failures raised inside the fallback handler.
+- **JSON helper:** `chat_json()` references `json` without importing it, producing a `NameError` when called.
+- **Credential editing:** `write_env()` rewrites a limited set of keys and can discard existing model/audio settings. Prefer manual `.env` edits until this is corrected.
+- **Audio:** Mute still transmits audio for wake recognition. Microphone input is gated while Misa is speaking; seamless interruption is not guaranteed.
+- **Device helpers:** Some controls contain fixed user/device identifiers. Volume helpers do not check subprocess exit status before reporting success. Brightness writes a state file that the current HUD does not consume.
+- **Home control:** Fuzzy entity matching can select multiple devices. There is no general confirmation workflow; verify targets before using connected actuators.
+- **Build reproducibility:** Python dependencies are unpinned. A later rebuild can install different package versions.
+- **Offline operation:** No local voice/model fallback is wired into this edition.
 
-An OpenRouter language model alone is not a live search engine. web_lookup.py must retrieve current search results before asking a model to summarize them.
-Data Persistence
+## Agents Office integration
 
-The following host directories are mounted into the container:
+The separate Misa Company / Agents Office project is **not connected in this repository**. There are no task-submission, progress or proposal-retrieval tools here yet.
 
-    memory/: saved user memories
+The intended integration is to add authenticated office tools to `misa_ai_core/tools/` and register them in `runtime.py`. With the current Linux host-network Compose configuration, Misa can reach an office published on the same host at `http://127.0.0.1:4520`. This is an integration path, not a feature already implemented.
 
-    config/: local integration settings
+## Development
 
-    runtime/: PID and listening state
+Change personality in `persona/system_prompt.txt`, visuals in `display/web/`, and tool behavior in `tools/`. Register new tool schemas and handlers together in `runtime.py`.
 
-These files survive container rebuilds. Deleting the Docker image does not delete these host directories.
-Security
+Before contributing, check that no credentials or personal data are staged, run a syntax check, and describe which behavior was actually tested. Hardware and provider tests require a local desktop environment and the relevant accounts.
 
-    Never commit .env.
+This README documents source reviewed at commit `9997e6d`. That review checked Python syntax and reproduced the JSON-helper error without live provider or device calls; it does not certify an end-to-end deployment.
 
-    Never paste API keys into issues, screenshots, logs, or chat.
+## Attribution and licensing
 
-    Revoke any exposed key immediately.
+Misa AI Core was adapted from [Omarvscape / Jarvis](https://github.com/amrselim95/Omarvscape---Jarvis).
 
-    Keep Home Assistant tokens private.
-
-    Review tool permissions before allowing device or smart-home actions.
-
-    The container uses host networking, display access, audio access, and /dev/snd; run only trusted code.
-
-Development Notes
-
-    runtime.py owns Gemini Live, audio streaming and tool execution.
-
-    display/hud.py should remain a small bridge; visual design belongs in HTML/CSS.
-
-    display/web/index.html owns UI behavior and Qt WebChannel events.
-
-    display/web/style.css owns appearance and responsive layout.
-
-    Rebuild the image after source changes because the source tree is copied during docker build.
-
-    Do not add a bind mount for the entire project unless intentional; it overrides files built into the image.
-
-License and Attribution
-
-This project was adapted from the Omarvscape/Jarvis repository. Review the upstream repository's license and reuse terms before public redistribution, and preserve any attribution required by the upstream license.
+No standalone `LICENSE` file was present in the inspected checkout. Review the upstream terms and establish this repository's license before redistribution; public source availability alone is not a license grant.
