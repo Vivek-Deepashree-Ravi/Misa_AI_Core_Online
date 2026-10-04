@@ -16,6 +16,10 @@ LEGACY_JSON_FILE = BASE_DIR / "config" / "api_keys.json"
 
 
 KEY_ALIASES = {
+    "ANGEL_API_KEY": "angel_api_key",
+    "ANGEL_CLIENT_CODE": "angel_client_code",
+    "ANGEL_CLIENT_PUBLIC_IP": "angel_client_public_ip",
+    "ANGEL_CLIENT_LOCAL_IP": "angel_client_local_ip",
     "GEMINI_API_KEY": "gemini_api_key",
     "OPENROUTER_API_KEY": "openrouter_api_key",
     "ZERNIO_API_KEY": "zernio_api_key",
@@ -88,7 +92,8 @@ def write_env(gemini_api_key: str, openrouter_api_key: str, zernio_api_key: str 
     elif existing.get("ZERNIO_API_KEY"):
         lines.append(f"ZERNIO_API_KEY={existing['ZERNIO_API_KEY']}")
 
-    for key in ("HOME_ASSISTANT_URL", "HOME_ASSISTANT_TOKEN"):
+    for key in ("HOME_ASSISTANT_URL", "HOME_ASSISTANT_TOKEN", "ANGEL_API_KEY",
+                "ANGEL_CLIENT_CODE", "ANGEL_CLIENT_PUBLIC_IP", "ANGEL_CLIENT_LOCAL_IP"):
         if existing.get(key):
             lines.append(f"{key}={existing[key]}")
     ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
