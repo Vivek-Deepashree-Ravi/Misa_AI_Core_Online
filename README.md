@@ -320,8 +320,4 @@ Before contributing, check that no credentials or personal data are staged, run 
 
 This README documents source reviewed at commit `9997e6d`. That review checked Python syntax and reproduced the JSON-helper error without live provider or device calls; it does not certify an end-to-end deployment.
 
-## Attribution and licensing
 
-Misa AI Core was adapted from [Omarvscape / Jarvis](https://github.com/amrselim95/Omarvscape---Jarvis).
-
-No standalone `LICENSE` file was present in the inspected checkout. Review the upstream terms and establish this repository's license before redistribution; public source availability alone is not a license grant.
